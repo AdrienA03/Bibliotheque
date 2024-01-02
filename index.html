@@ -387,7 +387,7 @@
                     bookItem.innerHTML = `
                     <strong> <center>Tome ${book.volume}</center> </strong>
                     <br>
-                    <center> <img src="${book.image}" alt="${book.title}" style="max-width: 100px; max-height: 150px;"> </center>
+                    <center> <img src="${book.image}" alt="${book.title}" style="max-width: 100px; max-height: 150px;" onclick="toggleSelection('${book.id}')"> </center>
                     <br>
                     <center> <button type="button" data-book-id="${book.id}" onclick="selectBook('${book.id}')">Sélectionner</button> </center>
                 `;             
@@ -447,11 +447,33 @@
         function selectBook(bookId) {
             // Recherchez le livre dans la collection appropriée
             var allBooks = getAllBooks();
-            var book = allBooks.find(function(book) {
-                return book.id === bookId && book.available;
+            var book = allBooks.find(function (book) {
+                return book.id === bookId;
             });
 
-            if (book) {
+            // Vérifiez si le livre est déjà sélectionné
+            var alreadySelected = selectedBooks.some(function (selectedBook) {
+                return selectedBook.id === bookId;
+            });
+
+            if (alreadySelected) {
+                // Le livre est déjà sélectionné, donc désélectionnez-le
+                selectedBooks = selectedBooks.filter(function (selectedBook) {
+                    return selectedBook.id !== bookId;
+                });
+
+                book.available = true; // Marquer le livre comme disponible
+                displaySelectedBooks();
+
+                // Obtenez le bouton correspondant au livre désélectionné
+                var selectedButton = document.querySelector(`[data-book-id="${bookId}"]`);
+
+                // Retirez la classe du bouton désélectionné
+                if (selectedButton) {
+                    selectedButton.classList.remove('selected-button');
+                }
+            } else {
+                // Le livre n'est pas encore sélectionné, alors sélectionnez-le
                 selectedBooks.push(book);
                 book.available = false; // Marquer le livre comme non disponible
                 displaySelectedBooks();
@@ -463,14 +485,70 @@
                 if (selectedButton) {
                     selectedButton.classList.add('selected-button');
                 }
+            }
+        }
+
+        function toggleSelection(bookId) {
+            // Recherchez le livre dans la collection appropriée
+            var allBooks = getAllBooks();
+            var book = allBooks.find(function (book) {
+                return book.id === bookId;
+            });
+
+            // Vérifiez si le livre est déjà sélectionné
+            var alreadySelected = selectedBooks.some(function (selectedBook) {
+                return selectedBook.id === bookId;
+            });
+
+            if (alreadySelected) {
+                // Le livre est déjà sélectionné, donc désélectionnez-le
+                selectedBooks = selectedBooks.filter(function (selectedBook) {
+                    return selectedBook.id !== bookId;
+                });
+
+                book.available = true; // Marquer le livre comme disponible
             } else {
-                alert("Ce livre n'est pas disponible.");
+                // Le livre n'est pas encore sélectionné, alors sélectionnez-le
+                selectedBooks.push(book);
+                book.available = false; // Marquer le livre comme non disponible
+            }
+
+            // Mettez à jour l'apparence du bouton associé au livre
+            updateButtonAppearance(bookId);
+
+            displaySelectedBooks();
+        }
+
+        function updateButtonAppearance(bookId) {
+            // Obtenez le bouton correspondant au livre
+            var selectedButton = document.querySelector(`[data-book-id="${bookId}"]`);
+
+            // Mettez à jour la classe du bouton en fonction de l'état du livre
+            if (selectedButton) {
+                var isBookSelected = selectedBooks.some(function (selectedBook) {
+                    return selectedBook.id === bookId;
+                });
+
+                if (isBookSelected) {
+                    selectedButton.classList.add('selected-button');
+                } else {
+                    selectedButton.classList.remove('selected-button');
+                }
             }
         }
 
 
         function displaySelectedBooks() {
             var selectedBooksList = document.getElementById('selectedBooks');
+            
+            // Trier les livres sélectionnés par ordre alphabétique de la série, puis par ordre de numéro de tome
+            selectedBooks.sort((a, b) => {
+                if (a.series !== b.series) {
+                    return a.series.localeCompare(b.series);
+                }
+                return a.volume - b.volume;
+            });
+
             selectedBooksList.innerHTML = '';
 
             selectedBooks.forEach(function(book) {
@@ -481,10 +559,13 @@
         }
 
         function borrowBooks() {
-            // Ici, vous pourriez implémenter la logique pour enregistrer les emprunts dans une base de données, par exemple
-            alert("Livres empruntés avec succès !");
-
-            // Ici, vous pourriez implémenter la logique pour enregistrer les emprunts dans une base de données, par exemple
+            // Trier les livres sélectionnés par ordre alphabétique et par numéro de tome
+            selectedBooks.sort((a, b) => {
+                if (a.series !== b.series) {
+                    return a.series.localeCompare(b.series);
+                }
+                return a.volume - b.volume;
+            });
 
             // Construire un tableau d'objets avec des détails sur les livres empruntés
             const borrowedBooksDetails = selectedBooks.map(book => {
